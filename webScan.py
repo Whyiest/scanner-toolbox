@@ -3,6 +3,7 @@ import argparse
 import subprocess
 import requests
 from bs4 import BeautifulSoup
+from colorama import init, Fore, Style
 
 def parse_nmap_results(file_path):
     urls = []
@@ -24,7 +25,11 @@ def parse_nmap_results(file_path):
 
         ports = re.findall(r'(\d+)/tcp\s+open', ports_info)
         for port in ports:
-            urls.append(f"http://{ip}:{port}")
+            if port in ['80', '8080']:
+                protocol = 'http'
+            else:
+                protocol = 'https'
+            urls.append(f"{protocol}://{ip}:{port}")
 
     return urls
 
@@ -48,6 +53,7 @@ def fetch_page_preview(url):
         return 'Error fetching page', str(e)
 
 def main():
+    init(autoreset=True)  # Initialize colorama and auto-reset colors after each print
     parser = argparse.ArgumentParser(description="Parse Nmap results and generate URLs with previews.")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-file', dest='file_path', help="Path to the Nmap results file.")
@@ -63,9 +69,9 @@ def main():
 
     for url in urls:
         title, content_preview = fetch_page_preview(url)
-        print(f"URL: {url}")
-        print(f"Title: {title}")
-        print(f"Content Preview: {content_preview}\n")
+        print(f"{Fore.MAGENTA}URL: {Fore.CYAN}{url}")
+        print(f"{Fore.BLUE}Title: {Style.RESET_ALL}{title}")
+        print(f"{Fore.GREEN}Content Preview: {Style.RESET_ALL}{content_preview}\n")
 
 if __name__ == "__main__":
     main()
