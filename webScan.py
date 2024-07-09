@@ -4,6 +4,10 @@ import subprocess
 import requests
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+# Disable SSL warnings
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 def parse_nmap_results(file_path):
     urls = []
@@ -41,16 +45,17 @@ def run_nmap_scan(ip_range):
 
 def fetch_page_preview(url):
     try:
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         title = soup.title.string if soup.title else 'No title found'
         # Extract some text content for preview, limited to 200 characters
         content = soup.get_text(strip=True)
         content_preview = content[:200] if content else 'No content found'
-        return title, content_preview
+        redirect_info = response.url if response.url != url else 'No redirection'
+        return title, content_preview, redirect_info
     except requests.RequestException as e:
-        return 'Error fetching page', str(e)
+        return 'Error fetching page', str(e), 'No redirection'
 
 def main():
     init(autoreset=True)  # Initialize colorama and auto-reset colors after each print
@@ -68,10 +73,11 @@ def main():
         urls = parse_nmap_results(nmap_output_file)
 
     for url in urls:
-        title, content_preview = fetch_page_preview(url)
+        title, content_preview, redirect_info = fetch_page_preview(url)
         print(f"{Fore.MAGENTA}URL: {Fore.CYAN}{url}")
         print(f"{Fore.BLUE}Title: {Style.RESET_ALL}{title}")
-        print(f"{Fore.GREEN}Content Preview: {Style.RESET_ALL}{content_preview}\n")
+        print(f"{Fore.GREEN}Content Preview: {Style.RESET_ALL}{content_preview}")
+        print(f"{Fore.RED}Redirection: {Style.RESET_ALL}{redirect_info}\n")
 
 if __name__ == "__main__":
     main()
