@@ -1,7 +1,8 @@
-
 import re
 import argparse
 import subprocess
+import requests
+from bs4 import BeautifulSoup
 
 def parse_nmap_results(file_path):
     urls = []
@@ -33,8 +34,21 @@ def run_nmap_scan(ip_range):
     subprocess.run(nmap_command, check=True)
     return output_file
 
+def fetch_page_preview(url):
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        title = soup.title.string if soup.title else 'No title found'
+        # Extract some text content for preview, limited to 200 characters
+        content = soup.get_text(strip=True)
+        content_preview = content[:200] if content else 'No content found'
+        return title, content_preview
+    except requests.RequestException as e:
+        return 'Error fetching page', str(e)
+
 def main():
-    parser = argparse.ArgumentParser(description="Parse Nmap results and generate URLs.")
+    parser = argparse.ArgumentParser(description="Parse Nmap results and generate URLs with previews.")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-file', dest='file_path', help="Path to the Nmap results file.")
     group.add_argument('-ip', dest='ip_range', help="IP range to scan with Nmap (e.g., 10.10.10.2/24).")
@@ -48,7 +62,10 @@ def main():
         urls = parse_nmap_results(nmap_output_file)
 
     for url in urls:
-        print(url)
+        title, content_preview = fetch_page_preview(url)
+        print(f"URL: {url}")
+        print(f"Title: {title}")
+        print(f"Content Preview: {content_preview}\n")
 
 if __name__ == "__main__":
     main()
