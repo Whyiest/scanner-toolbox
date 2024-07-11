@@ -8,12 +8,12 @@ from datetime import datetime
 # Initialisation de colorama
 init(autoreset=True)
 
-# Liste des shares à colorer en jaune (blacklist)
-yellow_shares = ['ADMIN$', 'C$', 'SYSVOL', 'IPC$']
+# Liste des shares à colorer en rouge (blacklist)
+blacklist = ['ADMIN$', 'C$', 'SYSVOL', 'IPC$']
 
 # Fonction pour colorer les shares
 def color_share(share_name):
-    if share_name in yellow_shares:
+    if share_name in blacklist:
         return f"{Fore.YELLOW}{share_name}{Style.RESET_ALL}"
     else:
         return f"{Fore.MAGENTA}{share_name}{Style.RESET_ALL}"
@@ -24,6 +24,8 @@ def color_permission(permission):
         return f"{Fore.GREEN}{permission}{Style.RESET_ALL}"
     elif permission == 'FULL':
         return f"{Fore.RED}{permission}{Style.RESET_ALL}"
+    elif permission == 'WRITE':
+        return f"{Fore.CYAN}{permission}{Style.RESET_ALL}"
     else:
         return permission
 
@@ -67,7 +69,7 @@ def main():
         data = file.readlines()
 
     # Expression régulière pour extraire les informations
-    share_pattern = re.compile(r'SMB\s+(\d+\.\d+\.\d+\.\d+)\s+\d+\s+\S+\s+(\S+)\s+(READ|FULL|NOACCESS)')
+    share_pattern = re.compile(r'SMB\s+(\d+\.\d+\.\d+\.\d+)\s+\d+\s+\S+\s+(\S+)\s+((?:READ|FULL|WRITE)(?:,\s*(?:READ|FULL|WRITE))*)')
 
     # Dictionnaire pour stocker les résultats par IP
     results = defaultdict(list)
@@ -77,12 +79,12 @@ def main():
     for line in data:
         match = share_pattern.search(line)
         if match:
-            ip, share, permission = match.groups()
-            if args.filter and share in yellow_shares:
+            ip, share, permissions = match.groups()
+            if args.filter and share in blacklist:
                 continue
             colored_share = color_share(share)
-            colored_permission = color_permission(permission)
-            results[ip].append(f"    {colored_share} {colored_permission}")
+            colored_permissions = ', '.join(color_permission(p.strip()) for p in permissions.split(','))
+            results[ip].append(f"    {colored_share} {colored_permissions}")
 
     # Affichage des résultats
     print(f"{Fore.CYAN}Affichage des résultats :{Style.RESET_ALL}")
