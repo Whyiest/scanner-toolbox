@@ -87,7 +87,7 @@ def main():
     # Affichage des résultats
     print(f"{Fore.CYAN}Affichage des résultats :{Style.RESET_ALL}")
     for ip, shares in results.items():
-        print(f"{Fore.CYAN}[---------------------------- {Fore.ORANGE}{ip}{Fore.CYAN} ------------------------------]{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[---------------------------- {Fore.BLUE}{ip}{Fore.CYAN} ------------------------------]{Style.RESET_ALL}")
         print(f"smb://{ip}")
         for share in shares:
             print(share)
