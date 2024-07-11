@@ -3,6 +3,7 @@ import argparse
 import subprocess
 from collections import defaultdict
 from colorama import init, Fore, Style
+from datetime import datetime
 
 # Initialisation de colorama
 init(autoreset=True)
@@ -28,18 +29,20 @@ def color_permission(permission):
 
 # Fonction pour exécuter le scan
 def run_scan(ip_range, username, password):
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    output_file = f'scanResult_{timestamp}.txt'
     print(f"{Fore.CYAN}Démarrage du scan SMB sur la plage {ip_range} avec l'utilisateur {username}...{Style.RESET_ALL}")
-    command = f'crackmapexec smb {ip_range} -u {username} -p {password} --shares > shares4.txt'
+    command = f'crackmapexec smb {ip_range} -u {username} -p {password} --shares > {output_file}'
     subprocess.run(command, shell=True, check=True)
-    print(f"{Fore.CYAN}Scan terminé. Résultats stockés dans shares4.txt{Style.RESET_ALL}")
-    return 'shares4.txt'
+    print(f"{Fore.CYAN}Scan terminé. Résultats stockés dans {output_file}{Style.RESET_ALL}")
+    return output_file
 
 # Fonction principale
 def main():
     # Initialisation de l'analyseur d'arguments
     parser = argparse.ArgumentParser(description='Extract SMB shares with read permissions from scan result.')
     parser.add_argument('-file', type=str, help='Path to the input file containing scan results')
-    parser.add_argument('-scan', action='store_true', help='Run scan and store the result in shares4.txt')
+    parser.add_argument('-scan', action='store_true', help='Run scan and store the result in a uniquely named file')
     parser.add_argument('-ip', type=str, help='IP range to scan (e.g., 10.4.0.0/16)')
     parser.add_argument('-u', type=str, help='Username for the scan')
     parser.add_argument('-p', type=str, help='Password for the scan')
@@ -84,7 +87,7 @@ def main():
     # Affichage des résultats
     print(f"{Fore.CYAN}Affichage des résultats :{Style.RESET_ALL}")
     for ip, shares in results.items():
-        print(f"{Fore.CYAN}[---------------------------- {Fore.BLUE}{ip}{Fore.CYAN} ------------------------------]{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[---------------------------- {Fore.ORANGE}{ip}{Fore.CYAN} ------------------------------]{Style.RESET_ALL}")
         print(f"smb://{ip}")
         for share in shares:
             print(share)
