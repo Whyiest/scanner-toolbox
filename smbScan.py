@@ -1,12 +1,13 @@
 import re
 import argparse
 import subprocess
+from collections import defaultdict
 from colorama import init, Fore, Style
 
 # Initialisation de colorama
 init(autoreset=True)
 
-# Liste des shares à colorer en jaune
+# Liste des shares à colorer en jaune (blacklist)
 yellow_shares = ['ADMIN$', 'C$', 'SYSVOL', 'IPC$']
 
 # Fonction pour colorer les shares
@@ -42,6 +43,7 @@ def main():
     parser.add_argument('-ip', type=str, help='IP range to scan (e.g., 10.4.0.0/16)')
     parser.add_argument('-u', type=str, help='Username for the scan')
     parser.add_argument('-p', type=str, help='Password for the scan')
+    parser.add_argument('--filter', action='store_true', help='Filter out shares in the blacklist')
 
     # Parsing des arguments
     args = parser.parse_args()
@@ -64,8 +66,8 @@ def main():
     # Expression régulière pour extraire les informations
     share_pattern = re.compile(r'SMB\s+(\d+\.\d+\.\d+\.\d+)\s+\d+\s+\S+\s+(\S+)\s+(READ|FULL|NOACCESS)')
 
-    # Liste pour stocker les résultats
-    results = []
+    # Dictionnaire pour stocker les résultats par IP
+    results = defaultdict(list)
 
     # Extraction des informations
     print(f"{Fore.CYAN}Extraction des informations des shares...{Style.RESET_ALL}")
@@ -73,14 +75,19 @@ def main():
         match = share_pattern.search(line)
         if match:
             ip, share, permission = match.groups()
+            if args.filter and share in yellow_shares:
+                continue
             colored_share = color_share(share)
             colored_permission = color_permission(permission)
-            results.append(f'smb://{ip}/{colored_share} {colored_permission}')
+            results[ip].append(f"    {colored_share} {colored_permission}")
 
     # Affichage des résultats
     print(f"{Fore.CYAN}Affichage des résultats :{Style.RESET_ALL}")
-    for result in results:
-        print(result)
+    for ip, shares in results.items():
+        print(f"{Fore.CYAN}[---------------------------- {Fore.BLUE}{ip}{Fore.CYAN} ------------------------------]{Style.RESET_ALL}")
+        print(f"smb://{ip}")
+        for share in shares:
+            print(share)
 
 # Appel de la fonction principale
 if __name__ == '__main__':
